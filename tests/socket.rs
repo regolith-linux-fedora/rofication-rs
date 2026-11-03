@@ -98,3 +98,22 @@ fn dismiss_by_application_name_with_a_colon() {
     daemon.client().count().unwrap();
     assert_eq!(daemon.applications(), ["Chat: Work: Urgent"]);
 }
+
+#[test]
+fn list_keeps_the_hints() {
+    let daemon = Daemon::start(
+        "hints",
+        vec![note(
+            "app",
+            r#"{"transient": true, "x-nested": {"urgency": 7, "actions": 5}}"#,
+        )],
+    );
+    let listed = daemon.client().list().unwrap();
+    let Json::Array(items) = listed else {
+        panic!("list is not an array");
+    };
+    let hints = items[0].get("hints").expect("hints listed");
+    assert!(matches!(hints.get("transient"), Some(Json::Bool(true))));
+    let nested = hints.get("x-nested").expect("nested hint listed");
+    assert_eq!(nested.dumps(), r#"{"urgency": 7, "actions": 5}"#);
+}

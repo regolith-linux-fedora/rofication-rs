@@ -7,7 +7,7 @@ use std::process::{Command, Stdio};
 use crate::bigint::BigInt;
 use crate::client::{Client, ClientError};
 use crate::json::{self, Json};
-use crate::notification::Urgency;
+use crate::notification::{tuple_of, Urgency};
 use crate::pystr;
 use crate::resource::Resource;
 use crate::strftime::Stamp;
@@ -130,35 +130,33 @@ fn py_str(value: Option<&Json>) -> String {
     }
 }
 
-/// The list is decoded with `Notification.make` as the object hook of
-/// every JSON object, nested hint dicts included: each one needs a valid
+/// Each listed entry is decoded with `Notification.make`: it needs a valid
 /// `urgency` (when present) and an iterable `actions` (when present).
-fn check_object_hook(value: &Json) -> Result<(), ClientError> {
-    match value {
-        Json::Array(items) => items.iter().try_for_each(check_object_hook),
-        Json::Object(map) => {
-            for (_, inner) in map {
-                check_object_hook(inner)?;
+/// Nested objects, the hints among them, are plain data and are not checked.
+fn check_entries(document: &Json) -> Result<(), ClientError> {
+    let Json::Array(items) = document else {
+        return Ok(());
+    };
+    for item in items {
+        let Json::Object(map) = item else {
+            continue;
+        };
+        if let Some(urgency) = json::object_get(map, "urgency") {
+            if Urgency::from_json(urgency).is_none() {
+                return Err(fatal("ValueError: invalid urgency in list reply"));
             }
-            if let Some(urgency) = json::object_get(map, "urgency") {
-                if Urgency::from_json(urgency).is_none() {
-                    return Err(fatal("ValueError: invalid urgency in list reply"));
-                }
-            }
-            if let Some(actions) = json::object_get(map, "actions") {
-                // Nested objects are already notifications: not iterable.
-                if !matches!(actions, Json::Array(_) | Json::Str(_)) {
-                    return Err(fatal("TypeError: actions is not iterable"));
-                }
-            }
-            Ok(())
         }
-        _ => Ok(()),
+        if let Some(actions) = json::object_get(map, "actions") {
+            if tuple_of(actions).is_none() {
+                return Err(fatal("TypeError: actions is not iterable"));
+            }
+        }
     }
+    Ok(())
 }
 
 fn rows(document: &Json) -> Result<Vec<Row>, ClientError> {
-    check_object_hook(document)?;
+    check_entries(document)?;
     let Json::Array(items) = document else {
         return Err(fatal("TypeError: list reply is not an array"));
     };
@@ -390,5 +388,29 @@ mod tests {
         );
         // Tags go first; escaping then stops at the first NUL.
         assert_eq!(strip_tags("a<\0>b\0c"), "ab");
+    }
+
+    fn listed(hints: &str, extra: &str) -> Result<Vec<Row>, ClientError> {
+        let text = format!(
+            r#"[{{"id": 1, "summary": "s", "body": "b", "application": "a", "urgency": 1, "actions": [], "hints": {hints}{extra}}}]"#
+        );
+        rows(&json::parse(&text).unwrap())
+    }
+
+    #[test]
+    fn hints_are_plain_data() {
+        // Only the listed notifications are decoded; dicts nested in the
+        // hints keep whatever keys they carry.
+        let rows = listed(
+            r#"{"transient": true, "x": {"urgency": 7, "actions": 5}}"#,
+            "",
+        )
+        .unwrap_or_else(|e| panic!("{}", e.message()));
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].urgency, Urgency::Normal);
+        // A listed notification is still checked.
+        assert!(listed("{}", r#", "urgency": 7"#).is_err());
+        assert!(listed("{}", r#", "actions": 5"#).is_err());
+        assert!(listed("{}", r#", "actions": {"default": "Open"}"#).is_ok());
     }
 }
