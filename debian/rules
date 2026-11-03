@@ -1,0 +1,38 @@
+#!/usr/bin/make -f
+#export DH_VERBOSE=1
+
+export CARGO_TERM_COLOR = never
+
+# The locked crates need Rust >= 1.89. Where the default toolchain is older
+# (Ubuntu 24.04), install a versioned one (rustc-1.89 cargo-1.89 or newer);
+# the newest one found is used.
+RUST_VERSIONED_BIN := $(lastword $(sort $(wildcard /usr/lib/rust-1.*/bin)))
+ifneq ($(RUST_VERSIONED_BIN),)
+export PATH := $(RUST_VERSIONED_BIN):$(PATH)
+endif
+
+# The build honours Cargo.lock as committed. It needs the crates from
+# crates.io, or a vendored copy configured in CARGO_HOME (see README.md).
+CARGO_FLAGS = --release --locked
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+
+override_dh_auto_build:
+	cargo build $(CARGO_FLAGS)
+
+override_dh_auto_test:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	cargo test $(CARGO_FLAGS)
+endif
+
+override_dh_auto_install:
+
+override_dh_auto_clean:
+	rm -rf target
+
+# Rust release binaries: no separate debug-symbol package.
+override_dh_strip:
+	dh_strip --no-automatic-dbgsym

@@ -1,0 +1,32 @@
+[package]
+name = "rofication"
+version = "1.2.2"
+edition = "2021"
+license = "MIT"
+rust-version = "1.89"
+description = "Rofication notification system: daemon, rofi viewer and i3xrocks status block"
+homepage = "https://github.com/regolith-linux/regolith-rofication"
+publish = false
+
+[lib]
+name = "rofication"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rofication-daemon"
+path = "src/bin/rofication-daemon.rs"
+
+[[bin]]
+name = "rofication-gui"
+path = "src/bin/rofication-gui.rs"
+
+[[bin]]
+name = "rofication-status"
+path = "src/bin/rofication-status.rs"
+
+# The versions the port was verified with; Cargo.lock pins every crate.
+[dependencies]
+zbus = "5.19.0"
+serde = { version = "1.0.228", features = ["derive"] }
+signal-hook = "0.4.5"
+chrono = "0.4.42"

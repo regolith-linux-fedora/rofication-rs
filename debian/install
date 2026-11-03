@@ -1,0 +1,3 @@
+target/release/rofication-daemon usr/bin/
+target/release/rofication-gui usr/bin/
+target/release/rofication-status usr/bin/
