@@ -231,7 +231,8 @@ fn handle(shared: &Shared, mut stream: UnixStream) {
     let Some(line) = read_line(&mut stream) else {
         return;
     };
-    let mut parts = pystr::strip(&line).split(':');
+    let request = pystr::strip(&line);
+    let mut parts = request.split(':');
     let command = parts.next().unwrap_or("");
     let arg = parts.next();
     let signals = shared.signals.as_ref();
@@ -265,9 +266,11 @@ fn handle(shared: &Shared, mut stream: UnixStream) {
             let _ = lock_queue(&shared.queue).remove_all(&ids, DISMISSED, signals);
             None
         }
-        // Dismiss every notification of an application.
+        // Dismiss every notification of an application. The name is
+        // everything after the first `:`, so names that contain a colon
+        // ("Chat: Work") are matched whole.
         "dela" => {
-            let Some(application) = arg else {
+            let Some((_, application)) = request.split_once(':') else {
                 return;
             };
             let mut queue = lock_queue(&shared.queue);
