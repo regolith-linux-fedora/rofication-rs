@@ -68,9 +68,10 @@ cargo test --locked                # unit and socket tests
 dpkg-buildpackage -b -us -uc       # the regolith-rofication package
 ```
 
-The locked crates (zbus 5, serde, signal-hook, chrono) need Rust 1.89 or newer. Ubuntu 26.04's
-`cargo` is new enough. On Ubuntu 24.04, install `cargo-1.89 rustc-1.89` (or newer); `debian/rules`
-picks the newest versioned toolchain it finds. The build downloads the crates from crates.io; for
+The locked crates (zbus 5, serde, signal-hook, chrono) need Rust 1.85 or newer. The `cargo` in
+Debian 13 (trixie), Ubuntu 26.04 and Fedora is new enough. On Ubuntu 24.04, install
+`cargo-1.85 rustc-1.85` (or newer); `debian/rules` picks the newest versioned toolchain it finds.
+`Cargo.toml` uses resolver 3, so `cargo update` keeps the lock on versions that support Rust 1.85. The build downloads the crates from crates.io; for
 an offline build, run `cargo vendor` and add the `[source]` configuration it prints to
 `.cargo/config.toml` (or to `$CARGO_HOME/config.toml`).
 

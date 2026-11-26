@@ -3,7 +3,9 @@ name = "rofication"
 version = "1.2.2"
 edition = "2021"
 license = "MIT"
-rust-version = "1.89"
+rust-version = "1.85"
+# Resolve dependencies to versions that still support rust-version.
+resolver = "3"
 description = "Rofication notification system: daemon, rofi viewer and i3xrocks status block"
 homepage = "https://github.com/regolith-linux/regolith-rofication"
 publish = false
@@ -26,7 +28,7 @@ path = "src/bin/rofication-status.rs"
 
 # The versions the port was verified with; Cargo.lock pins every crate.
 [dependencies]
-zbus = "5.19.0"
+zbus = "5.0"
 serde = { version = "1.0.228", features = ["derive"] }
 signal-hook = "0.4.5"
 chrono = "0.4.42"

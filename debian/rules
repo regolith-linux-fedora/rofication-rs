@@ -3,8 +3,8 @@
 
 export CARGO_TERM_COLOR = never
 
-# The locked crates need Rust >= 1.89. Where the default toolchain is older
-# (Ubuntu 24.04), install a versioned one (rustc-1.89 cargo-1.89 or newer);
+# The locked crates need Rust >= 1.85. Where the default toolchain is older
+# (Ubuntu 24.04), install a versioned one (rustc-1.85 cargo-1.85 or newer);
 # the newest one found is used.
 RUST_VERSIONED_BIN := $(lastword $(sort $(wildcard /usr/lib/rust-1.*/bin)))
 ifneq ($(RUST_VERSIONED_BIN),)
